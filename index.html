@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>3人共享笔记</title>
+    <title>3人实时共享笔记 (GitHub版)</title>
     <style>
         body { font-family: Arial; max-width: 800px; margin: 0 auto; padding: 20px; }
         textarea { width: 100%; height: 100px; }
@@ -9,7 +9,8 @@
     </style>
 </head>
 <body>
-    <h1>3人共享笔记</h1>
+    <h1>3人实时共享笔记</h1>
+    <p>数据存在 GitHub，自动同步（每10秒刷新）</p>
     
     <div>
         <input type="text" id="author" placeholder="你的名字">
@@ -20,18 +21,28 @@
     <div id="notes"></div>
 
     <script>
-        // 从本地存储加载
-        function loadNotes() {
-            const notes = JSON.parse(localStorage.getItem('notes')) || [];
-            let html = '';
-            notes.forEach(note => {
-                html += `<div class="note"><b>${note.author}</b> (${note.time}): ${note.content}</div>`;
-            });
-            document.getElementById('notes').innerHTML = html;
+        // 你的 GitHub 用户名和仓库名（修改这里！）
+        const GITHUB_USER = "你的GitHub用户名";
+        const REPO_NAME = "simple-notes";
+        const NOTES_FILE = "notes.json";  // 存储笔记的 JSON 文件
+        
+        // 从 GitHub 获取笔记
+        async function fetchNotes() {
+            try {
+                const response = await fetch(
+                    `https://raw.githubusercontent.com/${GITHUB_USER}/${REPO_NAME}/main/${NOTES_FILE}`
+                );
+                if (!response.ok) throw new Error("无法加载笔记");
+                const notes = await response.json();
+                return notes || [];
+            } catch (error) {
+                console.error("加载笔记失败:", error);
+                return [];
+            }
         }
 
-        // 添加新笔记
-        function addNote() {
+        // 添加新笔记（提交到 GitHub）
+        async function addNote() {
             const author = document.getElementById('author').value;
             const content = document.getElementById('content').value;
             
@@ -40,20 +51,39 @@
                 return;
             }
 
-            const note = {
+            const newNote = {
                 author,
                 content,
                 time: new Date().toLocaleString()
             };
 
-            // 保存到本地
-            const existingNotes = JSON.parse(localStorage.getItem('notes')) || [];
-            localStorage.setItem('notes', JSON.stringify([note, ...existingNotes]));
-            loadNotes(); // 刷新显示
+            // 1. 获取已有笔记
+            const existingNotes = await fetchNotes();
+            const updatedNotes = [newNote, ...existingNotes];
+
+            // 2. 提交到 GitHub（需手动 token）
+            alert("笔记已保存到本地！需要手动同步到 GitHub（见教程）");
+            localStorage.setItem("pending_notes", JSON.stringify(updatedNotes));
         }
 
-        // 页面加载时读出
-        loadNotes();
+        // 显示笔记
+        function displayNotes(notes) {
+            let html = '';
+            notes.forEach(note => {
+                html += `<div class="note"><b>${note.author}</b> (${note.time}): ${note.content}</div>`;
+            });
+            document.getElementById('notes').innerHTML = html;
+        }
+
+        // 自动刷新笔记
+        async function autoRefresh() {
+            const notes = await fetchNotes();
+            displayNotes(notes);
+            setTimeout(autoRefresh, 10000); // 10秒刷新一次
+        }
+
+        // 启动
+        autoRefresh();
     </script>
 </body>
 </html>
