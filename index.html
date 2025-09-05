@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>3人共享笔记</title>
+    <style>
+        body { font-family: Arial; max-width: 800px; margin: 0 auto; padding: 20px; }
+        textarea { width: 100%; height: 100px; }
+        .note { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>3人共享笔记</h1>
+    
+    <div>
+        <input type="text" id="author" placeholder="你的名字">
+        <textarea id="content" placeholder="写笔记..."></textarea>
+        <button onclick="addNote()">保存</button>
+    </div>
+
+    <div id="notes"></div>
+
+    <script>
+        // 从本地存储加载
+        function loadNotes() {
+            const notes = JSON.parse(localStorage.getItem('notes')) || [];
+            let html = '';
+            notes.forEach(note => {
+                html += `<div class="note"><b>${note.author}</b> (${note.time}): ${note.content}</div>`;
+            });
+            document.getElementById('notes').innerHTML = html;
+        }
+
+        // 添加新笔记
+        function addNote() {
+            const author = document.getElementById('author').value;
+            const content = document.getElementById('content').value;
+            
+            if (!author || !content) {
+                alert("填写名字和内容！");
+                return;
+            }
+
+            const note = {
+                author,
+                content,
+                time: new Date().toLocaleString()
+            };
+
+            // 保存到本地
+            const existingNotes = JSON.parse(localStorage.getItem('notes')) || [];
+            localStorage.setItem('notes', JSON.stringify([note, ...existingNotes]));
+            loadNotes(); // 刷新显示
+        }
+
+        // 页面加载时读出
+        loadNotes();
+    </script>
+</body>
+</html>
